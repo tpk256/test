@@ -1,4 +1,3 @@
-import requests
 
 from api import *
 
@@ -7,11 +6,11 @@ from api import *
 # имя хоста поулчить
 host = "Zabbix server"
 zabbix_url_api = "http://127.0.0.1:80/api_jsonrpc.php"
-
+name = "ping"
 item_id = 0
 
 token = get_token(user="Admin", password="zabbix", url=zabbix_url_api)
-
+print(token)
 trgs = [trg["triggerid"] for trg in get_triggers_problem(host, token, zabbix_url_api)]
 print(trgs, "trgs")
 
@@ -23,6 +22,16 @@ print(items_types)
 # items = ['28615']
 
 hs = [get_history_item(item, token, zabbix_url_api, type_, ) for item, type_ in items_types]
-print(hs)
 
-logout(token, url=zabbix_url_api)
+for_gr = sorted(hs[0], key=lambda dct: int(dct['clock']))
+
+x = []
+y = []
+for item in for_gr:
+    x += [int(item['clock'])]
+    y += [int(item['value'])]
+
+x = convert_timestamp_to_datetime(x)
+create_graph(x, y, "number_process")
+
+# logout(token, url=zabbix_url_api)

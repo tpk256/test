@@ -1,10 +1,14 @@
 import requests
+from matplotlib import dates
+
+import matplotlib.pyplot as plt
+
+import numpy as np
 
 import datetime
 
-# import tkinter as tk
-
 id_ = 1
+# Todo переделать почеловечески,а то как-то костыльно
 
 
 def increment_id():
@@ -106,7 +110,6 @@ def get_items_for_trigger(trigger, token, url, name=False):
     }
     increment_id()
     answer = requests.post(url=url, json=payload).json()
-
     if 'error' not in answer:
         return answer["result"]
     print(answer)
@@ -153,3 +156,23 @@ def get_type_for_item(token, url,  item):
     if 'error' not in answer:
         return answer['result']
     print(answer)
+
+
+def convert_timestamp_to_datetime(timestamp_list):
+    return [datetime.datetime.fromtimestamp(item, tz=None) for item in timestamp_list]
+
+
+def create_graph(x, y, name):
+    fmt = dates.DateFormatter('%d-%H:%M')
+    fig, ax = plt.subplots()
+
+    plt.title(f"График изменения {name}")
+    plt.xlabel("Datetime")
+    plt.ylabel("Values")
+    ax.grid()
+
+    ax.plot(x, y, "-o")
+    ax.xaxis.set_major_formatter(fmt)
+    fig.autofmt_xdate()
+
+    fig.savefig(f"{name}.png")
