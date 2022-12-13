@@ -18,8 +18,11 @@ print(trgs, "trgs")
 items = [get_items_for_trigger(trg, token, zabbix_url_api, True)[0]["itemid"] for trg in trgs]
 print(items, "items")
 
-# items = ['28584', '28615']
-hs = [get_history_item(item, token, zabbix_url_api) for item in items]
+items_types = [(item, get_type_for_item(token, zabbix_url_api, item)[0]['value_type']) for item in items ]
+print(items_types)
+# items = ['28615']
+
+hs = [get_history_item(item, token, zabbix_url_api, type_, ) for item, type_ in items_types]
 print(hs)
 
 logout(token, url=zabbix_url_api)

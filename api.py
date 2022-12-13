@@ -112,22 +112,41 @@ def get_items_for_trigger(trigger, token, url, name=False):
     print(answer)
 
 
-def get_history_item(item_id, token, url, limit=100):
+def get_history_item(item_id, token, url, type_=3, limit=100):
     payload = {
         "jsonrpc": "2.0",
         "method": "history.get",
         "params": {
             "output": "extend",
-            "history": 0,
+            "history": type_,
             "itemids": item_id,
             "sortfield": "clock",
-            "sortorder": "ASC",
+            "sortorder": "DESC",
             "limit": limit
         },
         "auth": token,
         "id": id_
     }
 
+    increment_id()
+    answer = requests.post(url=url, json=payload).json()
+
+    if 'error' not in answer:
+        return answer['result']
+    print(answer)
+
+
+def get_type_for_item(token, url,  item):
+    payload = {
+        "jsonrpc": "2.0",
+        "method": "item.get",
+        "params": {
+            "output": ["value_type"],
+            "itemids": item,
+        },
+        "auth": token,
+        "id": id_
+    }
     increment_id()
     answer = requests.post(url=url, json=payload).json()
 
