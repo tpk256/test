@@ -112,7 +112,7 @@ def get_items_for_trigger(trigger, token, url, name=False):
     print(answer)
 
 
-def get_history_item(item_id, token, url, limit=10):
+def get_history_item(item_id, token, url, limit=100):
     payload = {
         "jsonrpc": "2.0",
         "method": "history.get",

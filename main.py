@@ -15,7 +15,7 @@ token = get_token(user="Admin", password="zabbix", url=zabbix_url_api)
 trgs = [trg["triggerid"] for trg in get_triggers_problem(host, token, zabbix_url_api)]
 print(trgs, "trgs")
 
-items = [get_items_for_trigger(trg, token, zabbix_url_api)[0]["itemid"] for trg in trgs]
+items = [get_items_for_trigger(trg, token, zabbix_url_api, True)[0]["itemid"] for trg in trgs]
 print(items, "items")
 
 # items = ['28584', '28615']
