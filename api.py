@@ -1,4 +1,5 @@
 import requests
+
 from matplotlib import dates
 
 import matplotlib.pyplot as plt
@@ -16,7 +17,7 @@ def increment_id():
     id_ += 1
 
 
-def get_token(user, password, url) -> str:
+def get_token(user, password, url):
     payload = {
         "jsonrpc": "2.0",
         "method": "user.login",
