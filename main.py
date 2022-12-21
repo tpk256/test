@@ -4,12 +4,13 @@ from api import Zabbix
 
 from base64 import b64encode
 
-from expressAPi import *
+import requests
 
 import logging
 
 import sys
 
+logging.basicConfig(filename="log.txt", filemode="a", level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
 
 if len(sys.argv) != 13:
     logging.error("Недостаточное количество аргументов")
@@ -71,7 +72,7 @@ def send_problem(name):
 
 
 if __name__ == "__main__":
-    logging.basicConfig(filename="log.txt", filemode="a", level=logging.INFO)
+
     try:
         if event_value == 1:  # It's a problem
             zb = Zabbix(user, password, url, host)
