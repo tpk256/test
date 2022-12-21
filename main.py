@@ -2,12 +2,17 @@ import os
 
 from api import Zabbix
 
+from base64 import b64encode
+
 from expressAPi import *
+
+import logging
 
 import sys
 
 
 if len(sys.argv) != 13:
+    logging.error("Недостаточное количество аргументов")
     exit(-1)
 
 event_source, \
@@ -36,32 +41,24 @@ def send_problem(name):
 
         url = express_url + "/api/v4/botx/notifications/direct"
         headers = {"Authorization": f"Bearer {express_token}",
-                   "Content-Type": "application/json"}
+                   "Content-Type": "multipart/form-data"}
 
         payload = {"group_chat_id": express_send_to,
                    "notification": {
                        "status": "ok",
-                       "body": express_message,
-                   }}
+                       "body": express_message},
+                   "file": {"file_name": name,
+                            "data": f"data:image/png;base64,{b64encode(data).decode('ASCII')}"}
+                   }
+
         req = requests.post(url, json=payload, headers=headers)
 
-        multi_part = {"content": (f"{name}", f"{data}", "image/png"),
-                      "group_chat_id": (None, express_send_to),
-                      "meta": (None,
-                               json.dumps({
-                                   "duration": None,
-                                   "caption": f"{name}"
-                               }),
-                               "application/json")
-
-                      }
-        url = express_url + "/api/v3/botx/files/upload"
-        req = requests.post(url, files=multi_part, headers=headers)
-
         if not req.ok:
+            logging.error("Неудачный запрос")
             exit(-1)
         return req.json()
     except requests.Timeout:
+        logging.error("Сервис botx недоступен")
         exit(-1)
 
 
@@ -74,33 +71,41 @@ def send_problem(name):
 
 
 if __name__ == "__main__":
-    if event_value == 1:  # It's a problem
-        zb = Zabbix(user, password, url, host)
-        with zb:
-            trgs = zb.get_triggers_problem()
-            if not trgs:
-                exit(0)
+    logging.basicConfig(filename="log.txt", filemode="a", level=logging.INFO)
+    try:
+        if event_value == 1:  # It's a problem
+            zb = Zabbix(user, password, url, host)
+            with zb:
+                trgs = zb.get_triggers_problem()
+                if not trgs:
+                    logging.info("Нет активных триггеров")
+                    exit(0)
 
-            items = {}
-            for value in zb.get_items_for_trigger(trgs, name=True):
-                if len(value) == 1:
-                    items[value[0]] = []
+                items = {}
+                for value in zb.get_items_for_trigger(trgs, name=True):
+                    if len(value) == 1:
+                        items[value[0]] = []
+                    else:
+                        items[value[0]] = [value[1]]
+                for key in items:
+                    type_ = zb.get_type_for_item(key)
+                    items[key] += [type_]
+                for key in items:
+                    history = zb.get_history_item(key, items[key][-1])
+
+                    values = sorted(history, key=lambda clk: clk['clock'])
+                    items[key] += [zb.convert_timestamp_to_datetime(int(item['clock']) for item in values)]
+                    items[key] += [[item['value'] for item in values]]
+
+            for key in items:
+                filename = "./" + zb.create_graph(items[key][-2], items[key][-1], items[key][0])
+                msg = send_problem(filename)
+                if msg['status'] == "ok":
+                    logging.info(f"Сообщение отправлено и доставлено {msg}")
                 else:
-                    items[value[0]] = [value[1]]
-            for key in items:
-                type_ = zb.get_type_for_item(key)
-                items[key] += [type_]
-            for key in items:
-                history = zb.get_history_item(key, items[key][-1])
-
-                values = sorted(history, key=lambda clk: clk['clock'])
-                items[key] += [zb.convert_timestamp_to_datetime(int(item['clock']) for item in values)]
-                items[key] += [[item['value'] for item in values]]
-
-        for key in items:
-            filename = "./" + zb.create_graph(items[key][-2], items[key][-1], items[key][0])
-            send_problem(filename)
-
-            if os.path.exists(filename):
-                os.remove(filename)
+                    logging.error(f"Сообщение отправлено, но не доставлено  {msg}")
+                if os.path.exists(filename):
+                    os.remove(filename)
+    except:
+        logging.error("Возникла ошибка", exc_info=True)
 
